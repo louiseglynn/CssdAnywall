@@ -99,10 +99,10 @@ public class MainActivity extends FragmentActivity implements LocationListener,
   private static final float OFFSET_CALCULATION_ACCURACY = 0.01f;
 
   // Maximum results returned from a Parse query
-  private static final int MAX_POST_SEARCH_RESULTS = 20;
+  private static final int MAX_PHOTO_SEARCH_RESULTS = 20;
 
-  // Maximum post search radius for map in kilometers
-  private static final int MAX_POST_SEARCH_DISTANCE = 100;
+  // Maximum photo search radius for map in kilometers
+  private static final int MAX_PHOTO_SEARCH_DISTANCE = 100;
 
   /*
    * Other class member variables
@@ -121,7 +121,7 @@ public class MainActivity extends FragmentActivity implements LocationListener,
   private final Map<String, Marker> mapMarkers = new HashMap<String, Marker>();
   private int mostRecentMapUpdate;
   private boolean hasSetUpInitialLocation;
-  private String selectedPostObjectId;
+  private String selectedPhotoObjectId;
   private Location lastLocation;
   private Location currentLocation;
 
@@ -132,7 +132,7 @@ public class MainActivity extends FragmentActivity implements LocationListener,
   private GoogleApiClient locationClient;
 
   // Adapter for the Parse query
-  private ParseQueryAdapter<AnywallPost> postsQueryAdapter;
+  private ParseQueryAdapter<Photo> photoQueryAdapter;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -161,63 +161,63 @@ public class MainActivity extends FragmentActivity implements LocationListener,
               .build();
 
     // Set up a customized query
-    ParseQueryAdapter.QueryFactory<AnywallPost> factory =
-        new ParseQueryAdapter.QueryFactory<AnywallPost>() {
-          public ParseQuery<AnywallPost> create() {
+    ParseQueryAdapter.QueryFactory<Photo> factory =
+        new ParseQueryAdapter.QueryFactory<Photo>() {
+          public ParseQuery<Photo> create() {
             Location myLoc = (currentLocation == null) ? lastLocation : currentLocation;
-            ParseQuery<AnywallPost> query = AnywallPost.getQuery();
+            ParseQuery<Photo> query = Photo.getQuery();
             query.include("user");
             query.orderByDescending("createdAt");
             query.whereWithinKilometers("location", geoPointFromLocation(myLoc), radius
                 * METERS_PER_FEET / METERS_PER_KILOMETER);
-            query.setLimit(MAX_POST_SEARCH_RESULTS);
+            query.setLimit(MAX_PHOTO_SEARCH_RESULTS);
             return query;
           }
         };
 
     // Set up the query adapter
-    postsQueryAdapter = new ParseQueryAdapter<AnywallPost>(this, factory) {
+    photoQueryAdapter = new ParseQueryAdapter<Photo>(this, factory) {
       @Override
-      public View getItemView(AnywallPost post, View view, ViewGroup parent) {
+      public View getItemView(Photo photo, View view, ViewGroup parent) {
         if (view == null) {
-          view = View.inflate(getContext(), R.layout.anywall_post_item, null);
+          view = View.inflate(getContext(), R.layout.anywall_photo_item, null);
         }
         TextView contentView = (TextView) view.findViewById(R.id.content_view);
         TextView usernameView = (TextView) view.findViewById(R.id.username_view);
-        contentView.setText(post.getText());
-        usernameView.setText(post.getUser().getUsername());
+        contentView.setText(photo.getText());
+        usernameView.setText(photo.getUser().getUsername());
         return view;
       }
     };
 
     // Disable automatic loading when the adapter is attached to a view.
-    postsQueryAdapter.setAutoload(false);
+    photoQueryAdapter.setAutoload(false);
 
     // Disable pagination, we'll manage the query limit ourselves
-    postsQueryAdapter.setPaginationEnabled(false);
+    photoQueryAdapter.setPaginationEnabled(false);
 
     // Attach the query adapter to the view
-    ListView postsListView = (ListView) findViewById(R.id.posts_listview);
-    postsListView.setAdapter(postsQueryAdapter);
+    ListView photoListView = (ListView) findViewById(R.id.photos_listview);
+    photoListView.setAdapter(photoQueryAdapter);
 
     // Set up the handler for an item's selection
-    postsListView.setOnItemClickListener(new OnItemClickListener() {
+    photoListView.setOnItemClickListener(new OnItemClickListener() {
       public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        final AnywallPost item = postsQueryAdapter.getItem(position);
-        selectedPostObjectId = item.getObjectId();
+        final Photo item = photoQueryAdapter.getItem(position);
+        selectedPhotoObjectId = item.getObjectId();
         mapFragment.getMap().animateCamera(
-            CameraUpdateFactory.newLatLng(new LatLng(item.getLocation().getLatitude(), item
-                .getLocation().getLongitude())), new CancelableCallback() {
-              public void onFinish() {
-                Marker marker = mapMarkers.get(item.getObjectId());
-                if (marker != null) {
-                  marker.showInfoWindow();
-                }
-              }
+                CameraUpdateFactory.newLatLng(new LatLng(item.getLocation().getLatitude(), item
+                        .getLocation().getLongitude())), new CancelableCallback() {
+                  public void onFinish() {
+                    Marker marker = mapMarkers.get(item.getObjectId());
+                    if (marker != null) {
+                      marker.showInfoWindow();
+                    }
+                  }
 
-              public void onCancel() {
-              }
-            });
+                  public void onCancel() {
+                  }
+                });
         Marker marker = mapMarkers.get(item.getObjectId());
         if (marker != null) {
           marker.showInfoWindow();
@@ -237,19 +237,20 @@ public class MainActivity extends FragmentActivity implements LocationListener,
       }
     });
 
-    // Set up the handler for the post button click
-    Button postButton = (Button) findViewById(R.id.post_button);
-    postButton.setOnClickListener(new OnClickListener() {
+
+
+    Button photoButton = (Button) findViewById(R.id.photo_button);
+    photoButton.setOnClickListener(new OnClickListener() {
       public void onClick(View v) {
-        // Only allow posts if we have a location
+        // Only allow photo if we have a location
         Location myLoc = (currentLocation == null) ? lastLocation : currentLocation;
         if (myLoc == null) {
           Toast.makeText(MainActivity.this,
-              "Please try again after your location appears on the map.", Toast.LENGTH_LONG).show();
+                  "Please try again after your location appears on the map.", Toast.LENGTH_LONG).show();
           return;
         }
 
-        Intent intent = new Intent(MainActivity.this, PostActivity.class);
+        Intent intent = new Intent(MainActivity.this, PhotoActivity.class);
         intent.putExtra(Application.INTENT_EXTRA_LOCATION, myLoc);
         startActivity(intent);
       }
@@ -467,7 +468,7 @@ public class MainActivity extends FragmentActivity implements LocationListener,
    */
   private void startPeriodicUpdates() {
     LocationServices.FusedLocationApi.requestLocationUpdates(
-        locationClient, locationRequest, this);
+            locationClient, locationRequest, this);
   }
 
   /*
@@ -499,7 +500,7 @@ public class MainActivity extends FragmentActivity implements LocationListener,
     if (myLoc != null) {
       // Refreshes the list view with new data based
       // usually on updated location data.
-      postsQueryAdapter.loadObjects();
+      photoQueryAdapter.loadObjects();
     }
   }
 
@@ -516,19 +517,19 @@ public class MainActivity extends FragmentActivity implements LocationListener,
     }
     final ParseGeoPoint myPoint = geoPointFromLocation(myLoc);
     // Create the map Parse query
-    ParseQuery<AnywallPost> mapQuery = AnywallPost.getQuery();
+    ParseQuery<Photo> mapQuery = Photo.getQuery();
     // Set up additional query filters
-    mapQuery.whereWithinKilometers("location", myPoint, MAX_POST_SEARCH_DISTANCE);
+    mapQuery.whereWithinKilometers("location", myPoint, MAX_PHOTO_SEARCH_DISTANCE);
     mapQuery.include("user");
     mapQuery.orderByDescending("createdAt");
-    mapQuery.setLimit(MAX_POST_SEARCH_RESULTS);
+    mapQuery.setLimit(MAX_PHOTO_SEARCH_RESULTS);
     // Kick off the query in the background
-    mapQuery.findInBackground(new FindCallback<AnywallPost>() {
+    mapQuery.findInBackground(new FindCallback<Photo>() {
       @Override
-      public void done(List<AnywallPost> objects, ParseException e) {
+      public void done(List<Photo> objects, ParseException e) {
         if (e != null) {
           if (Application.APPDEBUG) {
-            Log.d(Application.APPTAG, "An error occurred while querying for map posts.", e);
+            Log.d(Application.APPTAG, "An error occurred while querying for map photo.", e);
           }
           return;
         }
@@ -540,20 +541,20 @@ public class MainActivity extends FragmentActivity implements LocationListener,
         if (myUpdateNumber != mostRecentMapUpdate) {
           return;
         }
-        // Posts to show on the map
+        // Photos to show on the map
         Set<String> toKeep = new HashSet<String>();
         // Loop through the results of the search
-        for (AnywallPost post : objects) {
-          // Add this post to the list of map pins to keep
-          toKeep.add(post.getObjectId());
-          // Check for an existing marker for this post
-          Marker oldMarker = mapMarkers.get(post.getObjectId());
+        for (Photo photo : objects) {
+          // Add this photo to the list of map pins to keep
+          toKeep.add(photo.getObjectId());
+          // Check for an existing marker for this photo
+          Marker oldMarker = mapMarkers.get(photo.getObjectId());
           // Set up the map marker's location
           MarkerOptions markerOpts =
-              new MarkerOptions().position(new LatLng(post.getLocation().getLatitude(), post
+              new MarkerOptions().position(new LatLng(photo.getLocation().getLatitude(), photo
                   .getLocation().getLongitude()));
           // Set up the marker properties based on if it is within the search radius
-          if (post.getLocation().distanceInKilometersTo(myPoint) > radius * METERS_PER_FEET
+          if (photo.getLocation().distanceInKilometersTo(myPoint) > radius * METERS_PER_FEET
               / METERS_PER_KILOMETER) {
             // Check for an existing out of range marker
             if (oldMarker != null) {
@@ -567,7 +568,7 @@ public class MainActivity extends FragmentActivity implements LocationListener,
             }
             // Display a red marker with a predefined title and no snippet
             markerOpts =
-                markerOpts.title(getResources().getString(R.string.post_out_of_range)).icon(
+                markerOpts.title(getResources().getString(R.string.photo_out_of_range)).icon(
                     BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
           } else {
             // Check for an existing in range marker
@@ -580,17 +581,17 @@ public class MainActivity extends FragmentActivity implements LocationListener,
                 oldMarker.remove();
               }
             }
-            // Display a green marker with the post information
+            // Display a green marker with the photo information
             markerOpts =
-                markerOpts.title(post.getText()).snippet(post.getUser().getUsername())
+                markerOpts.title(photo.getText()).snippet(photo.getUser().getUsername())
                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
           }
           // Add a new marker
           Marker marker = mapFragment.getMap().addMarker(markerOpts);
-          mapMarkers.put(post.getObjectId(), marker);
-          if (post.getObjectId().equals(selectedPostObjectId)) {
+          mapMarkers.put(photo.getObjectId(), marker);
+          if (photo.getObjectId().equals(selectedPhotoObjectId)) {
             marker.showInfoWindow();
-            selectedPostObjectId = null;
+            selectedPhotoObjectId = null;
           }
         }
         // Clean up old markers.
@@ -727,11 +728,30 @@ public class MainActivity extends FragmentActivity implements LocationListener,
     getMenuInflater().inflate(R.menu.main, menu);
 
     menu.findItem(R.id.action_settings).setOnMenuItemClickListener(new OnMenuItemClickListener() {
-      public boolean onMenuItemClick(MenuItem item) {
-        startActivity(new Intent(MainActivity.this, SettingsActivity.class));
-        return true;
-      }
+        public boolean onMenuItemClick(MenuItem item) {
+            startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+            return true;
+        }
     });
+
+     /* menu.findItem(R.id.action_take_picture).setOnMenuItemClickListener(new OnMenuItemClickListener() {
+          public boolean onMenuItemClick(MenuItem item) {
+              //Intent i = new Intent(this, NewPhotoActivity.class);
+              //startActivityForResult(i, 0);
+
+              startActivity(new Intent(MainActivity.this, PhotoActivity.class));
+              return true;
+          }
+      });*/
+
+      menu.findItem(R.id.action_photos).setOnMenuItemClickListener(new OnMenuItemClickListener() {
+          public boolean onMenuItemClick(MenuItem item) {
+              startActivity(new Intent(MainActivity.this, PhotoListActivity.class));
+              return true;
+          }
+      });
+
+
     return true;
   }
 

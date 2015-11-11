@@ -11,6 +11,13 @@
     tools:context=".MainActivity" >
 
     <Button
+        android:id="@+id/photo_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/action_take_picture"
+        android:textAppearance="?android:attr/textAppearanceSmallInverse" />
+
+    <Button
         android:id="@+id/post_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -26,7 +33,7 @@
         android:layout_marginTop="16dp" />
 
     <ListView
-        android:id="@+id/posts_listview"
+        android:id="@+id/photos_listview"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:layout_weight="1" />

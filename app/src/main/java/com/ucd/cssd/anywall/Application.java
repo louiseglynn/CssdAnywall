@@ -32,7 +32,8 @@ public class Application extends android.app.Application {
   public void onCreate() {
     super.onCreate();
 
-    ParseObject.registerSubclass(AnywallPost.class);
+
+    ParseObject.registerSubclass(Photo.class);
     Parse.initialize(this, "I4TqgNlV1KoDoqfD3v6zWbt4vTjITmjf3nKtznf0",
         "9Kldtj4Q9KDtagYjjio5QwfLW5r8VPYFpEg6sxed");
 
